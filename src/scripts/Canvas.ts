@@ -6,11 +6,12 @@ import fragmentShader from './shader/customStandard.fs'
 
 export class Canvas extends Three {
   private shaders: THREE.WebGLProgramParametersWithUniforms[] = []
+  private lights: THREE.Group
 
   constructor(canvas: HTMLCanvasElement) {
     super(canvas)
     this.init()
-    this.createLights()
+    this.lights = this.createLights()
 
     this.loadAssets().then((assets) => {
       this.createObject(assets)
@@ -22,6 +23,9 @@ export class Canvas extends Three {
     this.scene.background = new THREE.Color('#f0f0f0')
     this.camera.position.set(-3.16, 1.13, 10.39)
     this.camera.lookAt(this.scene.position)
+
+    this.controls.enableDamping = true
+    this.controls.enablePan = false
   }
 
   private async loadAssets() {
@@ -42,6 +46,9 @@ export class Canvas extends Three {
   }
 
   private createLights() {
+    const lights = new THREE.Group()
+    this.scene.add(lights)
+
     const dir = new THREE.DirectionalLight('#fff', 3)
     dir.position.set(5, 5, 5)
     dir.castShadow = true
@@ -49,9 +56,10 @@ export class Canvas extends Three {
     const frustum = 5
     dir.shadow.camera = new THREE.OrthographicCamera(-frustum, frustum, frustum, -frustum, 0.01, 20)
     dir.shadow.bias = -0.001
-    this.scene.add(dir)
-
+    lights.add(dir)
     // this.scene.add(new THREE.CameraHelper(dir.shadow.camera))
+
+    return lights
   }
 
   private createMaterial(texture: THREE.Texture, direction: number, speed: number) {
@@ -88,10 +96,10 @@ export class Canvas extends Three {
   }
 
   private anime() {
-    // this.controls.update()
     const dt = this.clock.getDelta()
+    this.controls.update()
 
-    // console.log(this.camera.position)
+    this.lights.quaternion.copy(this.camera.quaternion)
 
     for (const shader of this.shaders) {
       shader.uniforms.uTime.value += dt
